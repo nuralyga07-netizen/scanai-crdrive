@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ScanAI — скан глюкозы камерой</title>
+<link rel="icon" href="logo_icon.png">
+<meta name="description" content="ScanAI: исследовательский прототип — оценка глюкозы по пальцу на камере телефона. Попробуйте демо и скачайте приложение.">
+<style>
+:root{--navy:#010217;--card:#0a1030;--blue:#1e90ff;--cyan:#19d3ff;--ok:#2ee59d;--warn:#ffb020;--high:#ff4d5e;--low:#7aa2ff;--text:#eaf1ff;--mut:#8fa0c8}
+*{box-sizing:border-box;margin:0}
+body{background:radial-gradient(1200px 600px at 70% -10%,#0b2a6b55,transparent),var(--navy);color:var(--text);font-family:system-ui,Segoe UI,Roboto,sans-serif;line-height:1.5}
+a{color:var(--cyan)}
+.wrap{max-width:1050px;margin:0 auto;padding:0 16px}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+header img{height:38px}
+.btn{display:inline-block;padding:14px 26px;border-radius:30px;background:linear-gradient(90deg,var(--blue),var(--cyan));color:#001028;font-weight:700;text-decoration:none;border:0;cursor:pointer;font-size:16px}
+.btn.ghost{background:transparent;color:var(--cyan);border:1.5px solid var(--cyan)}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;padding:30px 0 50px}
+h1{font-size:clamp(32px,5vw,52px);line-height:1.1;margin-bottom:14px}
+h1 span{background:linear-gradient(90deg,var(--blue),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--mut);font-size:18px;margin-bottom:24px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.note{margin-top:18px;font-size:13px;color:var(--mut);border-left:3px solid var(--warn);padding-left:10px}
+/* phone */
+.phone{width:300px;height:600px;margin:0 auto;border-radius:38px;border:8px solid #16204a;background:var(--navy);position:relative;overflow:hidden;box-shadow:0 0 60px #1e90ff44}
+.screen{position:absolute;inset:0 0 56px 0;padding:18px 14px;overflow:auto;display:none}
+.screen.on{display:block;animation:fade .4s}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+.nav{position:absolute;bottom:0;left:0;right:0;height:56px;display:flex;background:#070c26;border-top:1px solid #16204a}
+.nav button{flex:1;background:none;border:0;color:var(--mut);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.5px}
+.nav button.on{color:var(--cyan)}
+.nav button i{display:block;font-style:normal;font-size:18px}
+.gauge{width:200px;height:200px;margin:8px auto;position:relative}
+.gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge .v{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge .v b{font-size:42px}
+.gauge .v small{color:var(--mut)}
+.zone{text-align:center;font-weight:700;margin:6px 0 14px}
+.finger{width:70px;height:70px;border-radius:50%;margin:10px auto;background:radial-gradient(circle,#ff6a6a,#8a0f1f);animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.12);box-shadow:0 0 30px #ff4d5e}}
+.chat{display:flex;flex-direction:column;gap:8px;font-size:13px}
+.msg{padding:9px 12px;border-radius:14px;max-width:88%}
+.msg.bot{background:var(--card);align-self:flex-start}
+.msg.me{background:var(--blue);align-self:flex-end}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips button{background:var(--card);color:var(--cyan);border:1px solid #16204a;border-radius:16px;padding:6px 10px;font-size:11px;cursor:pointer}
+.pill{background:var(--card);border-radius:14px;padding:10px 12px;margin-top:8px;font-size:13px;display:flex;justify-content:space-between}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.cal div{aspect-ratio:1;border-radius:8px;background:var(--card);font-size:10px;display:flex;align-items:center;justify-content:center}
+.demo-tag{text-align:center;font-size:11px;color:var(--warn);margin-top:6px}
+/* sections */
+section{padding:44px 0}
+h2{font-size:30px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid #16204a;border-radius:18px;padding:20px}
+.card h3{margin-bottom:6px;color:var(--cyan)}
+.card p{color:var(--mut);font-size:14px}
+.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+footer{padding:34px 0;color:var(--mut);font-size:13px;border-top:1px solid #16204a;margin-top:30px}
+@media(max-width:800px){.hero{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><img src="logo_full.png" alt="ScanAI"><a class="btn ghost" href="#download">Скачать</a></header>
+
+<div class="hero">
+  <div>
+    <h1>Скан глюкозы <span>одним пальцем</span></h1>
+    <p class="lead">ScanAI оценивает уровень глюкозы (ммоль/л) по сигналу PPG с камеры и вспышки телефона. Анимированный интерфейс, история, календарь повышенных дней и ИИ-помощник по теме глюкозы.</p>
+    <div class="row">
+      <a class="btn" href="ScanAI.apk" download>Скачать ScanAI.apk</a>
+      <a class="btn ghost" href="#demo">Попробовать демо</a>
+    </div>
+    <p class="note">Исследовательский прототип для демонстрации. Не медицинское изделие, не заменяет глюкометр и врача. Значения в веб-демо — симуляция.</p>
+  </div>
+
+  <div id="demo">
+    <div class="phone">
+      <!-- SCAN -->
+      <div class="screen on" id="s-scan">
+        <div class="gauge">
+          <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="#16204a" stroke-width="10"/><circle id="arc" cx="60" cy="60" r="52" fill="none" stroke="#1e90ff" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"/></svg>
+          <div class="v"><b id="val">—</b><small id="unit">ммоль/л</small></div>
+        </div>
+        <div class="zone" id="zone">Приложите палец к камере</div>
+        <div id="fing" style="display:none" class="finger"></div>
+        <div style="text-align:center;margin-top:10px"><button class="btn" id="go" style="padding:12px 30px">СКАНИРОВАТЬ</button></div>
+        <div class="demo-tag">демо: значение симулируется</div>
+      </div>
+      <!-- HISTORY -->
+      <div class="screen" id="s-hist">
+        <b>История</b>
+        <svg id="chart" viewBox="0 0 260 120" style="width:100%;margin-top:10px"></svg>
+        <div id="list"></div>
+      </div>
+      <!-- AI -->
+      <div class="screen" id="s-ai">
+        <div class="chat" id="chat"><div class="msg bot" id="hi">Привет, Асель! Спроси меня про глюкозу.</div></div>
+        <div class="chips" id="chips"></div>
+      </div>
+      <!-- PROFILE -->
+      <div class="screen" id="s-prof">
+        <div style="text-align:center"><img src="logo_icon.png" width="64" style="border-radius:50%"><br><b>Асель</b><br><small style="color:var(--mut)">34 года · диабет 2 типа</small></div>
+        <b style="display:block;margin-top:14px">Календарь повышенной глюкозы</b>
+        <div class="cal" id="cal"></div>
+      </div>
+      <div class="nav">
+        <button class="on" data-t="s-scan"><i>◉</i>ЗАМЕР</button>
+        <button data-t="s-hist"><i>≈</i>ИСТОРИЯ</button>
+        <button data-t="s-ai"><i>✦</i>ИИ-СКАН</button>
+        <button data-t="s-prof"><i>☺</i>ПРОФИЛЬ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <h2>Как это работает</h2>
+  <div class="grid">
+    <div class="card"><h3>1. Палец на камеру</h3><p>Вспышка подсвечивает палец, камера записывает пульсацию крови ~30 секунд.</p></div>
+    <div class="card"><h3>2. Анализ сигнала</h3><p>Фильтрация, выделение ударов, 17 признаков формы пульсовой волны.</p></div>
+    <div class="card"><h3>3. Оценка и совет</h3><p>Результат в ммоль/л, цвет зоны, история и ИИ-помощник по теме глюкозы (работает офлайн).</p></div>
+  </div>
+</section>
+
+<section id="download">
+  <h2>Скачать приложения</h2>
+  <div class="dl">
+    <div class="card"><h3>ScanAI</h3><p>Скан глюкозы камерой. Android.</p><br><a class="btn" href="ScanAI.apk" download>ScanAI.apk</a></div>
+    <div class="card"><h3>CR DRIVE · телефон</h3><p>Мониторинг здоровья водителя: показатели, карта, события.</p><br><a class="btn ghost" href="CR-DRIVE-phone.apk" download>CR-DRIVE-phone.apk</a></div>
+    <div class="card"><h3>CR DRIVE · часы</h3><p>Galaxy Watch 4 (Wear OS): пульс, ЭКГ, SpO₂.</p><br><a class="btn ghost" href="CR-DRIVE-watch.apk" download>CR-DRIVE-watch.apk</a></div>
+  </div>
+  <p class="note">Установка: откройте файл на Android-телефоне и разрешите установку из этого источника. Исходный код: <a href="https://github.com/nuralyga07-netizen/scanai-crdrive">GitHub</a>.</p>
+</section>
+
+<footer>ScanAI · CR DRIVE — исследовательские прототипы. Оценка глюкозы по камере не валидирована клинически; при плохом самочувствии обращайтесь к врачу (103 / 112).</footer>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const zone=v=>v<3.9?['Низкий','#7aa2ff']:v<=7.8?['Норма','#2ee59d']:v<=11?['Повышен','#ffb020']:['Высокий','#ff4d5e'];
+let hist=[5.4,5.9,6.1,7.2,8.4,6.3,5.8].map((v,i)=>({d:i,v}));
+// tabs
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));
+  render();
+});
+// scan
+let busy=false;
+$('#go').onclick=()=>{
+  if(busy)return;busy=true;
+  $('#fing').style.display='block';$('#val').textContent='0%';$('#unit').textContent='';
+  $('#zone').textContent='Измеряю… не двигайте палец';$('#zone').style.color='#19d3ff';
+  let p=0;const t=setInterval(()=>{
+    p+=1;$('#arc').style.strokeDashoffset=326.7*(1-p/100);$('#val').textContent=p+'%';
+    if(p>=100){clearInterval(t);
+      const v=+(4.8+Math.random()*3.8).toFixed(1);const[z,c]=zone(v);
+      $('#fing').style.display='none';$('#val').textContent=v;$('#unit').textContent='ммоль/л';
+      $('#arc').style.stroke=c;$('#zone').textContent=z;$('#zone').style.color=c;
+      hist.push({d:hist.length,v});busy=false;}
+  },90);
+};
+function render(){
+  const W=260,H=120,n=hist.length,max=12;
+  let pts=hist.map((h,i)=>[10+i*(W-20)/Math.max(n-1,1),H-10-(h.v/max)*(H-20)]);
+  $('#chart').innerHTML='<polyline fill="none" stroke="#1e90ff" stroke-width="2.5" points="'+pts.map(p=>p.join(',')).join(' ')+'"/>'+
+    pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${zone(hist[i].v)[1]}"/>`).join('');
+  $('#list').innerHTML=hist.slice().reverse().slice(0,6).map(h=>`<div class="pill"><span>Скан</span><b style="color:${zone(h.v)[1]}">${h.v} ммоль/л</b></div>`).join('');
+  $('#cal').innerHTML=Array.from({length:28},(_,i)=>{const v=[5.5,6.2,8.4,5.9,9.1,6.0,5.7][i%7];const c=v>7.8?zone(v)[1]:'';return `<div style="${c?'background:'+c+'55;color:#fff':''}">${i+1}</div>`}).join('');
+}
+// bot
+const QA={
+ 'Сахар высокий — что делать?':'При сахаре выше 10 ммоль/л: выпейте воды, сделайте лёгкую прогулку, избегайте сладкого. Дозы лекарств я не назначаю — следуйте схеме врача. При тошноте, сильной жажде или сахаре выше 16 свяжитесь с врачом.',
+ 'Сахар низкий — что делать?':'Ниже 3,9 ммоль/л: примите 15 г быстрых углеводов (сок, глюкоза), перемерьте через 15 минут. При спутанности сознания — 103/112.',
+ 'Что можно есть?':'Овощи, белок, цельнозерновые. Ограничьте сладкие напитки и выпечку. Подробный план составит эндокринолог.',
+ 'Какая норма?':'Натощак ориентир 3,9–5,5, через 2 часа после еды до 7,8 ммоль/л. Индивидуальные цели задаёт врач.'
+};
+Object.keys(QA).forEach(q=>{const b=document.createElement('button');b.textContent=q;b.onclick=()=>{
+  const c=$('#chat');c.insertAdjacentHTML('beforeend',`<div class="msg me">${q}</div>`);
+  setTimeout(()=>{c.insertAdjacentHTML('beforeend',`<div class="msg bot">${QA[q]}</div>`);$('#s-ai').scrollTop=1e5},600)};
+  $('#chips').appendChild(b)});
+render();
+</script>
+</body>
+</html>
