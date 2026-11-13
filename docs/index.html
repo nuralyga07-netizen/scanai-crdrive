@@ -73,7 +73,7 @@ footer{padding:34px 0;color:var(--mut);font-size:13px;border-top:1px solid #1620
       <a class="btn" href="ScanAI.apk" download>Скачать ScanAI.apk</a>
       <a class="btn ghost" href="#demo">Попробовать демо</a>
     </div>
-    <p class="note">Исследовательский прототип для демонстрации. Не медицинское изделие, не заменяет глюкометр и врача. Значения в веб-демо — симуляция.</p>
+    <p class="note">Исследовательский прототип для демонстрации. Не медицинское изделие, не заменяет глюкометр и врача. На сайте нет выдуманных чисел: замер выполняется только в приложении.</p>
   </div>
 
   <div id="demo">
@@ -87,7 +87,7 @@ footer{padding:34px 0;color:var(--mut);font-size:13px;border-top:1px solid #1620
         <div class="zone" id="zone">Приложите палец к камере</div>
         <div id="fing" style="display:none" class="finger"></div>
         <div style="text-align:center;margin-top:10px"><button class="btn" id="go" style="padding:12px 30px">СКАНИРОВАТЬ</button></div>
-        <div class="demo-tag">демо: значение симулируется</div>
+        <div class="demo-tag">веб-версия показывает интерфейс; значения — только в приложении</div>
       </div>
       <!-- HISTORY -->
       <div class="screen" id="s-hist">
@@ -97,12 +97,12 @@ footer{padding:34px 0;color:var(--mut);font-size:13px;border-top:1px solid #1620
       </div>
       <!-- AI -->
       <div class="screen" id="s-ai">
-        <div class="chat" id="chat"><div class="msg bot" id="hi">Привет, Асель! Спроси меня про глюкозу.</div></div>
+        <div class="chat" id="chat"><div class="msg bot" id="hi">Привет! Спроси меня про глюкозу (в приложении я обращаюсь по имени).</div></div>
         <div class="chips" id="chips"></div>
       </div>
       <!-- PROFILE -->
       <div class="screen" id="s-prof">
-        <div style="text-align:center"><img src="logo_icon.png" width="64" style="border-radius:50%"><br><b>Асель</b><br><small style="color:var(--mut)">34 года · диабет 2 типа</small></div>
+        <div style="text-align:center"><img src="logo_icon.png" width="64" style="border-radius:50%"><br><b>Ваше имя</b><br><small style="color:var(--mut)">возраст · диагноз (вводятся в приложении)</small></div>
         <b style="display:block;margin-top:14px">Календарь повышенной глюкозы</b>
         <div class="cal" id="cal"></div>
       </div>
@@ -141,7 +141,7 @@ footer{padding:34px 0;color:var(--mut);font-size:13px;border-top:1px solid #1620
 <script>
 const $=s=>document.querySelector(s);
 const zone=v=>v<3.9?['Низкий','#7aa2ff']:v<=7.8?['Норма','#2ee59d']:v<=11?['Повышен','#ffb020']:['Высокий','#ff4d5e'];
-let hist=[5.4,5.9,6.1,7.2,8.4,6.3,5.8].map((v,i)=>({d:i,v}));
+let hist=[]; // no sample data: real readings exist only inside the Android app
 // tabs
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x===b));
@@ -151,17 +151,8 @@ document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
 // scan
 let busy=false;
 $('#go').onclick=()=>{
-  if(busy)return;busy=true;
-  $('#fing').style.display='block';$('#val').textContent='0%';$('#unit').textContent='';
-  $('#zone').textContent='Измеряю… не двигайте палец';$('#zone').style.color='#19d3ff';
-  let p=0;const t=setInterval(()=>{
-    p+=1;$('#arc').style.strokeDashoffset=326.7*(1-p/100);$('#val').textContent=p+'%';
-    if(p>=100){clearInterval(t);
-      const v=+(4.8+Math.random()*3.8).toFixed(1);const[z,c]=zone(v);
-      $('#fing').style.display='none';$('#val').textContent=v;$('#unit').textContent='ммоль/л';
-      $('#arc').style.stroke=c;$('#zone').textContent=z;$('#zone').style.color=c;
-      hist.push({d:hist.length,v});busy=false;}
-  },90);
+  $('#zone').innerHTML='Реальный замер — только в приложении.<br><a href="ScanAI.apk" download>Скачать ScanAI.apk</a>';
+  $('#zone').style.color='#19d3ff';
 };
 function render(){
   const W=260,H=120,n=hist.length,max=12;
@@ -169,7 +160,8 @@ function render(){
   $('#chart').innerHTML='<polyline fill="none" stroke="#1e90ff" stroke-width="2.5" points="'+pts.map(p=>p.join(',')).join(' ')+'"/>'+
     pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${zone(hist[i].v)[1]}"/>`).join('');
   $('#list').innerHTML=hist.slice().reverse().slice(0,6).map(h=>`<div class="pill"><span>Скан</span><b style="color:${zone(h.v)[1]}">${h.v} ммоль/л</b></div>`).join('');
-  $('#cal').innerHTML=Array.from({length:28},(_,i)=>{const v=[5.5,6.2,8.4,5.9,9.1,6.0,5.7][i%7];const c=v>7.8?zone(v)[1]:'';return `<div style="${c?'background:'+c+'55;color:#fff':''}">${i+1}</div>`}).join('');
+  if(!n)$('#list').innerHTML='<div class="pill"><span>Замеров пока нет. Они появятся в приложении после сканирования.</span></div>';
+  $('#cal').innerHTML=Array.from({length:28},(_,i)=>`<div>${i+1}</div>`).join('');
 }
 // bot
 const QA={

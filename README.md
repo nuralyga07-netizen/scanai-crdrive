@@ -1,5 +1,5 @@
 # ScanAI & CR DRIVE
-n**Сайт / Live demo: https://nuralyga07-netizen.github.io/scanai-crdrive/**
+n**Сайт / Live demo: https://scanai.nuralyga.workers.dev**
 
 Research prototypes (investor / jury demo). **Not medical devices.**
 
