@@ -5,176 +5,342 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ScanAI — скан глюкозы камерой</title>
 <link rel="icon" href="logo_icon.png">
-<meta name="description" content="ScanAI: исследовательский прототип — оценка глюкозы по пальцу на камере телефона. Попробуйте демо и скачайте приложение.">
+<meta name="description" content="ScanAI: исследовательский проект — оценка глюкозы по пальцу на камере телефона. Посмотрите, как это работает, и скачайте приложение.">
 <style>
-:root{--navy:#010217;--card:#0a1030;--blue:#1e90ff;--cyan:#19d3ff;--ok:#2ee59d;--warn:#ffb020;--high:#ff4d5e;--low:#7aa2ff;--text:#eaf1ff;--mut:#8fa0c8}
+:root{--navy:#010217;--card:#0a1030;--line:#16204a;--blue:#1e90ff;--cyan:#19d3ff;--ok:#2ee59d;--warn:#ffb020;--high:#ff4d5e;--text:#eaf1ff;--mut:#8fa0c8}
 *{box-sizing:border-box;margin:0}
-body{background:radial-gradient(1200px 600px at 70% -10%,#0b2a6b55,transparent),var(--navy);color:var(--text);font-family:system-ui,Segoe UI,Roboto,sans-serif;line-height:1.5}
+html{scroll-behavior:smooth}
+body{background:var(--navy);color:var(--text);font-family:system-ui,Segoe UI,Roboto,sans-serif;line-height:1.5;overflow-x:hidden}
 a{color:var(--cyan)}
-.wrap{max-width:1050px;margin:0 auto;padding:0 16px}
-header{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
-header img{height:38px}
-.btn{display:inline-block;padding:14px 26px;border-radius:30px;background:linear-gradient(90deg,var(--blue),var(--cyan));color:#001028;font-weight:700;text-decoration:none;border:0;cursor:pointer;font-size:16px}
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+main,header,footer{position:relative;z-index:1}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+/* ---------- INTRO ---------- */
+#intro{position:fixed;inset:0;z-index:100;background:radial-gradient(circle at 50% 45%,#0b2a6b,#010217 65%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform 1s cubic-bezier(.7,0,.2,1),opacity .9s;cursor:pointer}
+#intro.out{transform:translateY(-100%);opacity:.2}
+img[src^="logo"]{mix-blend-mode:screen}
+.rings{position:absolute;width:300px;height:300px}
+.rings i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--cyan);opacity:0;animation:ring 2.4s infinite}
+.rings i:nth-child(2){animation-delay:.8s}.rings i:nth-child(3){animation-delay:1.6s}
+@keyframes ring{0%{transform:scale(.3);opacity:.9}100%{transform:scale(2.6);opacity:0}}
+#intro img{width:min(320px,70vw);position:relative;opacity:0;transform:scale(.6);animation:logoIn 1.4s .3s forwards cubic-bezier(.2,1.4,.4,1),glow 2s 1.7s infinite}
+@keyframes logoIn{to{opacity:1;transform:scale(1)}}
+@keyframes glow{50%{filter:drop-shadow(0 0 28px #19d3ff)}}
+#introLine{position:relative;margin-top:36px;font-size:15px;letter-spacing:6px;color:var(--cyan);height:22px;opacity:0;animation:fadeUp .8s 1.6s forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.bar{position:relative;width:min(300px,70vw);height:4px;background:#16204a;border-radius:4px;margin-top:22px;overflow:hidden}
+.bar b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--cyan));box-shadow:0 0 14px var(--cyan);animation:load 4.6s .2s forwards cubic-bezier(.5,0,.3,1)}
+@keyframes load{to{width:100%}}
+#skip{position:absolute;bottom:26px;font-size:12px;color:var(--mut);letter-spacing:2px}
+/* ---------- common ---------- */
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+header img{height:36px}
+nav a{margin-left:18px;text-decoration:none;color:var(--mut);font-size:14px}
+nav a:hover{color:var(--cyan)}
+.btn{display:inline-block;padding:14px 28px;border-radius:30px;background:linear-gradient(90deg,var(--blue),var(--cyan));color:#001028;font-weight:700;text-decoration:none;border:0;cursor:pointer;font-size:16px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px #1e90ff66}
+.btn::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,#fff8,transparent);transform:skewX(-20deg);animation:shine 3s infinite}
+@keyframes shine{60%,100%{left:130%}}
 .btn.ghost{background:transparent;color:var(--cyan);border:1.5px solid var(--cyan)}
-.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;padding:30px 0 50px}
-h1{font-size:clamp(32px,5vw,52px);line-height:1.1;margin-bottom:14px}
-h1 span{background:linear-gradient(90deg,var(--blue),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
-.lead{color:var(--mut);font-size:18px;margin-bottom:24px}
+.btn.ghost::after{display:none}
+.reveal{opacity:0;transform:translateY(34px);transition:all .9s cubic-bezier(.2,.8,.2,1)}
+.reveal.in{opacity:1;transform:none}
+section{padding:60px 0}
+h2{font-size:clamp(26px,4vw,38px);margin-bottom:8px}
+h2 span,h1 span{background:linear-gradient(90deg,var(--blue),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);margin-bottom:26px;max-width:620px}
+/* ---------- HERO ---------- */
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;padding:30px 0 40px;min-height:76vh}
+h1{font-size:clamp(34px,6vw,60px);line-height:1.05;margin-bottom:16px}
+.lead{color:var(--mut);font-size:18px;margin-bottom:26px}
 .row{display:flex;gap:12px;flex-wrap:wrap}
 .note{margin-top:18px;font-size:13px;color:var(--mut);border-left:3px solid var(--warn);padding-left:10px}
-/* phone */
-.phone{width:300px;height:600px;margin:0 auto;border-radius:38px;border:8px solid #16204a;background:var(--navy);position:relative;overflow:hidden;box-shadow:0 0 60px #1e90ff44}
-.screen{position:absolute;inset:0 0 56px 0;padding:18px 14px;overflow:auto;display:none}
-.screen.on{display:block;animation:fade .4s}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
-.nav{position:absolute;bottom:0;left:0;right:0;height:56px;display:flex;background:#070c26;border-top:1px solid #16204a}
-.nav button{flex:1;background:none;border:0;color:var(--mut);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.5px}
-.nav button.on{color:var(--cyan)}
-.nav button i{display:block;font-style:normal;font-size:18px}
-.gauge{width:200px;height:200px;margin:8px auto;position:relative}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-14px) rotate(-1deg)}}
+.phone{width:290px;height:580px;margin:0 auto;border-radius:40px;border:8px solid #16204a;background:linear-gradient(180deg,#05103a,#010217);position:relative;overflow:hidden;box-shadow:0 0 70px #1e90ff55,inset 0 0 30px #0b2a6b}
+.phone::before{content:"";position:absolute;top:8px;left:50%;width:70px;height:6px;margin-left:-35px;background:#16204a;border-radius:6px;z-index:3}
+.pin{padding:34px 18px 18px;height:100%;display:flex;flex-direction:column;align-items:center}
+.gauge{width:190px;height:190px;position:relative;margin-top:10px}
 .gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
-.gauge .v{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.gauge .v b{font-size:42px}
-.gauge .v small{color:var(--mut)}
-.zone{text-align:center;font-weight:700;margin:6px 0 14px}
-.finger{width:70px;height:70px;border-radius:50%;margin:10px auto;background:radial-gradient(circle,#ff6a6a,#8a0f1f);animation:pulse 1s infinite}
-@keyframes pulse{50%{transform:scale(1.12);box-shadow:0 0 30px #ff4d5e}}
-.chat{display:flex;flex-direction:column;gap:8px;font-size:13px}
-.msg{padding:9px 12px;border-radius:14px;max-width:88%}
-.msg.bot{background:var(--card);align-self:flex-start}
+.gauge .arc{stroke-dasharray:326.7;animation:sweep 5s ease-in-out infinite}
+@keyframes sweep{0%{stroke-dashoffset:326.7}60%,80%{stroke-dashoffset:70}100%{stroke-dashoffset:326.7}}
+.gauge .v{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700}
+.gauge .v small{font-weight:400;color:var(--mut);font-size:12px}
+.sweep-ring{animation:spin 6s linear infinite;transform-origin:60px 60px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pcanvas{width:100%;height:80px;margin-top:14px;display:block}
+.chip{margin-top:12px;font-size:12px;color:var(--cyan);letter-spacing:2px}
+/* ---------- TABS ---------- */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px}
+.tabs button{background:var(--card);border:1px solid var(--line);color:var(--mut);padding:12px 20px;border-radius:26px;font-size:15px;cursor:pointer;transition:all .25s}
+.tabs button.on{background:linear-gradient(90deg,var(--blue),var(--cyan));color:#001028;font-weight:700;border-color:transparent;box-shadow:0 0 24px #1e90ff55}
+.pane{display:none}
+.pane.on{display:block;animation:paneIn .6s}
+@keyframes paneIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center}
+.steps{display:flex;flex-direction:column;gap:12px}
+.step{display:flex;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;transition:all .4s;opacity:.55}
+.step.on{opacity:1;border-color:var(--cyan);box-shadow:0 0 26px #19d3ff33;transform:translateX(8px)}
+.step b{width:38px;height:38px;border-radius:50%;background:var(--line);display:flex;align-items:center;justify-content:center;color:var(--cyan);flex:none}
+.step.on b{background:var(--cyan);color:#001028}
+.step p{font-size:14px;color:var(--mut)}.step h4{font-size:16px}
+.stage{background:radial-gradient(circle at 50% 40%,#0b2a6b66,var(--card));border:1px solid var(--line);border-radius:26px;padding:20px;min-height:380px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.stage svg{width:100%;max-width:340px}
+.finger{animation:press 4s infinite}
+@keyframes press{0%,15%{transform:translateY(120px)}35%,85%{transform:translateY(0)}100%{transform:translateY(120px)}}
+.flash{animation:flashp 1.2s infinite}
+@keyframes flashp{50%{opacity:.45}}
+.beat{transform-origin:center;transform-box:fill-box;animation:beat 1s infinite}
+@keyframes beat{15%{transform:scale(1.25)}30%{transform:scale(1)}}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;transition:transform .3s,border-color .3s}
+.card:hover{transform:translateY(-6px);border-color:var(--cyan)}
+.card h3{color:var(--cyan);margin:8px 0 4px;font-size:17px}.card p{color:var(--mut);font-size:14px}
+.card svg{width:54px;height:54px}
+/* screens carousel */
+.shots{display:flex;gap:26px;overflow-x:auto;padding:18px 6px 26px;scroll-snap-type:x mandatory}
+.shot{flex:none;width:230px;scroll-snap-align:center}
+.shot .phone{width:230px;height:460px;border-width:6px;border-radius:32px;animation:none}
+.shot .pin{padding:28px 12px 12px}
+.shot h4{text-align:center;margin-top:12px;color:var(--cyan)}
+.shot p{text-align:center;font-size:13px;color:var(--mut)}
+.mini-g{width:130px;height:130px;position:relative;margin-top:14px}
+.mini-g svg{width:100%;height:100%;transform:rotate(-90deg)}
+.bars{display:flex;align-items:flex-end;gap:7px;height:130px;margin-top:18px;width:100%}
+.bars i{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(var(--cyan),var(--blue));animation:grow 3s infinite ease-in-out;transform-origin:bottom}
+@keyframes grow{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;width:100%;margin-top:12px}
+.cal i{aspect-ratio:1;border-radius:7px;background:var(--card);border:1px solid var(--line)}
+.cal i.h{animation:blink 2.4s infinite}
+@keyframes blink{50%{background:#ffb02088}}
+/* chat */
+.chatbox{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;max-width:560px;margin:0 auto}
+.chat{display:flex;flex-direction:column;gap:9px;min-height:230px;font-size:14px;max-height:340px;overflow:auto}
+.msg{padding:10px 14px;border-radius:16px;max-width:88%;animation:fadeUp .4s}
+.msg.bot{background:#0f1a4a;align-self:flex-start}
 .msg.me{background:var(--blue);align-self:flex-end}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.chips button{background:var(--card);color:var(--cyan);border:1px solid #16204a;border-radius:16px;padding:6px 10px;font-size:11px;cursor:pointer}
-.pill{background:var(--card);border-radius:14px;padding:10px 12px;margin-top:8px;font-size:13px;display:flex;justify-content:space-between}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
-.cal div{aspect-ratio:1;border-radius:8px;background:var(--card);font-size:10px;display:flex;align-items:center;justify-content:center}
-.demo-tag{text-align:center;font-size:11px;color:var(--warn);margin-top:6px}
-/* sections */
-section{padding:44px 0}
-h2{font-size:30px;margin-bottom:18px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
-.card{background:var(--card);border:1px solid #16204a;border-radius:18px;padding:20px}
-.card h3{margin-bottom:6px;color:var(--cyan)}
-.card p{color:var(--mut);font-size:14px}
-.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
-footer{padding:34px 0;color:var(--mut);font-size:13px;border-top:1px solid #16204a;margin-top:30px}
-@media(max-width:800px){.hero{grid-template-columns:1fr}}
+.dots span{display:inline-block;width:6px;height:6px;margin:0 2px;border-radius:50%;background:var(--cyan);animation:dot 1s infinite}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{50%{transform:translateY(-5px)}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chips button{background:transparent;color:var(--cyan);border:1px solid var(--line);border-radius:18px;padding:8px 13px;font-size:13px;cursor:pointer}
+.chips button:hover{border-color:var(--cyan)}
+/* pipeline */
+.pipe{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;justify-content:center}
+.node{flex:1 1 150px;max-width:190px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center;position:relative;animation:node 6s infinite}
+.node:nth-child(1){animation-delay:0s}.node:nth-child(2){animation-delay:1.2s}.node:nth-child(3){animation-delay:2.4s}.node:nth-child(4){animation-delay:3.6s}.node:nth-child(5){animation-delay:4.8s}
+@keyframes node{0%,20%,100%{border-color:var(--line);box-shadow:none}8%{border-color:var(--cyan);box-shadow:0 0 28px #19d3ff55}}
+.node svg{width:46px;height:46px}.node h4{font-size:15px;margin-top:6px}.node p{font-size:12px;color:var(--mut)}
+.flow{height:6px;border-radius:6px;margin:26px auto 0;max-width:760px;background:repeating-linear-gradient(90deg,var(--cyan) 0 14px,transparent 14px 30px);background-size:60px 6px;animation:flow 1s linear infinite;opacity:.6}
+@keyframes flow{to{background-position:60px 0}}
+.dl{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center;background:linear-gradient(135deg,#0b2a6b88,var(--card));border:1px solid var(--cyan);border-radius:28px;padding:34px;box-shadow:0 0 60px #1e90ff33}
+footer{padding:34px 0 50px;color:var(--mut);font-size:13px;border-top:1px solid var(--line);margin-top:30px}
+@media(max-width:800px){.hero,.two,.dl{grid-template-columns:1fr}nav{display:none}.hero{min-height:auto}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
-<header><img src="logo_full.png" alt="ScanAI"><a class="btn ghost" href="#download">Скачать</a></header>
+
+<div id="intro">
+  <div class="rings"><i></i><i></i><i></i></div>
+  <img src="logo_full.png" alt="ScanAI">
+  <div id="introLine">ПРИЛОЖИ ПАЛЕЦ · УЗНАЙ СВОЙ САХАР</div>
+  <div class="bar"><b></b></div>
+  <div id="skip">нажмите, чтобы пропустить</div>
+</div>
+
+<canvas id="bg"></canvas>
+
+<header class="wrap">
+  <img src="logo_full.png" alt="ScanAI">
+  <nav><a href="#how">Как это работает</a><a href="#app">Приложение</a><a href="#ai">ИИ-помощник</a><a href="#tech">Технология</a></nav>
+  <a class="btn ghost" href="#download" style="padding:9px 20px;font-size:14px">Скачать</a>
+</header>
+
+<main class="wrap">
 
 <div class="hero">
-  <div>
-    <h1>Скан глюкозы <span>одним пальцем</span></h1>
-    <p class="lead">ScanAI оценивает уровень глюкозы (ммоль/л) по сигналу PPG с камеры и вспышки телефона. Анимированный интерфейс, история, календарь повышенных дней и ИИ-помощник по теме глюкозы.</p>
+  <div class="reveal">
+    <h1>Узнай свой сахар <span>одним пальцем</span></h1>
+    <p class="lead">ScanAI оценивает уровень глюкозы по пульсовой волне: просто приложи палец к камере и вспышке телефона. Без игл, без расходников.</p>
     <div class="row">
-      <a class="btn" href="ScanAI.apk" download>Скачать ScanAI.apk</a>
-      <a class="btn ghost" href="#demo">Попробовать демо</a>
+      <a class="btn" href="ScanAI.apk" download>Скачать для Android</a>
+      <a class="btn ghost" href="#how">Как это работает</a>
     </div>
-    <p class="note">Исследовательский прототип для демонстрации. Не медицинское изделие, не заменяет глюкометр и врача. На сайте нет выдуманных чисел: замер выполняется только в приложении.</p>
+    <p class="note">Исследовательский проект. Не медицинское изделие и не замена глюкометру или врачу. На сайте нет выдуманных результатов: числа появляются только при реальном замере в приложении.</p>
   </div>
-
-  <div id="demo">
-    <div class="phone">
-      <!-- SCAN -->
-      <div class="screen on" id="s-scan">
-        <div class="gauge">
-          <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="#16204a" stroke-width="10"/><circle id="arc" cx="60" cy="60" r="52" fill="none" stroke="#1e90ff" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"/></svg>
-          <div class="v"><b id="val">—</b><small id="unit">ммоль/л</small></div>
-        </div>
-        <div class="zone" id="zone">Приложите палец к камере</div>
-        <div id="fing" style="display:none" class="finger"></div>
-        <div style="text-align:center;margin-top:10px"><button class="btn" id="go" style="padding:12px 30px">СКАНИРОВАТЬ</button></div>
-        <div class="demo-tag">веб-версия показывает интерфейс; значения — только в приложении</div>
+  <div class="float reveal">
+    <div class="phone"><div class="pin">
+      <div class="gauge">
+        <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="#16204a" stroke-width="9"/>
+        <circle class="arc" cx="60" cy="60" r="52" fill="none" stroke="url(#g1)" stroke-width="9" stroke-linecap="round"/>
+        <g class="sweep-ring"><circle cx="60" cy="8" r="3" fill="#19d3ff"/></g>
+        <defs><linearGradient id="g1"><stop offset="0" stop-color="#1e90ff"/><stop offset="1" stop-color="#19d3ff"/></linearGradient></defs></svg>
+        <div class="v"><span style="font-size:34px">—</span><small>ммоль/л</small></div>
       </div>
-      <!-- HISTORY -->
-      <div class="screen" id="s-hist">
-        <b>История</b>
-        <svg id="chart" viewBox="0 0 260 120" style="width:100%;margin-top:10px"></svg>
-        <div id="list"></div>
+      <canvas class="pcanvas" id="heroWave" width="500" height="160"></canvas>
+      <div class="chip">ИДЁТ СКАНИРОВАНИЕ…</div>
+      <div style="margin-top:auto;width:100%;display:flex;gap:6px">
+        <i style="flex:1;height:5px;border-radius:5px;background:var(--cyan)"></i><i style="flex:1;height:5px;border-radius:5px;background:#16204a"></i><i style="flex:1;height:5px;border-radius:5px;background:#16204a"></i><i style="flex:1;height:5px;border-radius:5px;background:#16204a"></i>
       </div>
-      <!-- AI -->
-      <div class="screen" id="s-ai">
-        <div class="chat" id="chat"><div class="msg bot" id="hi">Привет! Спроси меня про глюкозу (в приложении я обращаюсь по имени).</div></div>
-        <div class="chips" id="chips"></div>
-      </div>
-      <!-- PROFILE -->
-      <div class="screen" id="s-prof">
-        <div style="text-align:center"><img src="logo_icon.png" width="64" style="border-radius:50%"><br><b>Ваше имя</b><br><small style="color:var(--mut)">возраст · диагноз (вводятся в приложении)</small></div>
-        <b style="display:block;margin-top:14px">Календарь повышенной глюкозы</b>
-        <div class="cal" id="cal"></div>
-      </div>
-      <div class="nav">
-        <button class="on" data-t="s-scan"><i>◉</i>ЗАМЕР</button>
-        <button data-t="s-hist"><i>≈</i>ИСТОРИЯ</button>
-        <button data-t="s-ai"><i>✦</i>ИИ-СКАН</button>
-        <button data-t="s-prof"><i>☺</i>ПРОФИЛЬ</button>
-      </div>
-    </div>
+    </div></div>
   </div>
 </div>
 
-<section>
-  <h2>Как это работает</h2>
-  <div class="grid">
-    <div class="card"><h3>1. Палец на камеру</h3><p>Вспышка подсвечивает палец, камера записывает пульсацию крови ~30 секунд.</p></div>
-    <div class="card"><h3>2. Анализ сигнала</h3><p>Фильтрация, выделение ударов, 17 признаков формы пульсовой волны.</p></div>
-    <div class="card"><h3>3. Оценка и совет</h3><p>Результат в ммоль/л, цвет зоны, история и ИИ-помощник по теме глюкозы (работает офлайн).</p></div>
+<section id="how">
+  <h2 class="reveal">Всё, что нужно — <span>палец и 30 секунд</span></h2>
+  <p class="sub reveal">Выберите раздел, чтобы посмотреть, как всё устроено.</p>
+
+  <div class="tabs reveal" id="tabs">
+    <button class="on" data-p="p1">① Как сделать скан</button>
+    <button data-p="p2">② Приложение</button>
+    <button data-p="p3" id="aiTab">③ ИИ-помощник</button>
+    <button data-p="p4">④ Технология</button>
+  </div>
+
+  <!-- 1 HOW -->
+  <div class="pane on reveal" id="p1">
+    <div class="two">
+      <div class="steps" id="steps">
+        <div class="step on"><b>1</b><div><h4>Закройте камеру пальцем</h4><p>Полностью накройте камеру и вспышку подушечкой пальца, без сильного нажима.</p></div></div>
+        <div class="step"><b>2</b><div><h4>Не двигайтесь 30 секунд</h4><p>Вспышка подсвечивает палец, камера ловит пульсацию крови.</p></div></div>
+        <div class="step"><b>3</b><div><h4>Следите за прогрессом</h4><p>Кольцо заполняется от 0 до 100%. Если палец сдвинулся — телефон завибрирует.</p></div></div>
+        <div class="step"><b>4</b><div><h4>Получите результат</h4><p>Значение в ммоль/л, цвет зоны и запись в историю.</p></div></div>
+      </div>
+      <div class="stage">
+        <svg viewBox="0 0 300 380">
+          <defs>
+            <linearGradient id="body" x1="0" x2="1"><stop offset="0" stop-color="#16204a"/><stop offset="1" stop-color="#070c26"/></linearGradient>
+            <radialGradient id="fl"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#19d3ff00"/></radialGradient>
+            <linearGradient id="skin" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ff8a80"/><stop offset="1" stop-color="#b3261e"/></linearGradient>
+          </defs>
+          <rect x="70" y="20" width="160" height="330" rx="30" fill="url(#body)" stroke="#1e90ff" stroke-width="2"/>
+          <rect x="96" y="44" width="52" height="64" rx="16" fill="#02030f" stroke="#2b3a7a"/>
+          <circle cx="112" cy="62" r="9" fill="#0b0f2e" stroke="#19d3ff"/>
+          <circle class="flash" cx="134" cy="90" r="6" fill="#fff"/>
+          <circle class="flash" cx="122" cy="76" r="48" fill="url(#fl)"/>
+          <g class="finger"><rect x="94" y="70" width="64" height="300" rx="30" fill="url(#skin)"/>
+            <ellipse class="beat" cx="126" cy="96" rx="14" ry="20" fill="#ff4d5e" opacity=".7"/></g>
+          <text x="150" y="200" text-anchor="middle" fill="#8fa0c8" font-size="13" font-family="system-ui">ScanAI</text>
+        </svg>
+      </div>
+    </div>
+    <div class="cards">
+      <div class="card"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="#19d3ff" stroke-width="3"/><path d="M14 25h6l3-8 4 15 3-7h4" fill="none" stroke="#19d3ff" stroke-width="3" stroke-linecap="round"/></svg><h3>Без иглы</h3><p>Только камера и вспышка, ничего не нужно покупать.</p></div>
+      <div class="card"><svg viewBox="0 0 48 48"><path d="M24 6c8 10 12 16 12 23a12 12 0 0 1-24 0c0-7 4-13 12-23z" fill="none" stroke="#1e90ff" stroke-width="3"/></svg><h3>Быстро</h3><p>Около 30 секунд на замер, историей можно делиться с врачом.</p></div>
+      <div class="card"><svg viewBox="0 0 48 48"><path d="M24 40S6 29 6 17a9 9 0 0 1 18-3 9 9 0 0 1 18 3c0 12-18 23-18 23z" fill="none" stroke="#ff4d5e" stroke-width="3"/></svg><h3>Вибро-подсказки</h3><p>Палец сместился — телефон сразу подскажет повторить.</p></div>
+    </div>
+  </div>
+
+  <!-- 2 APP -->
+  <div class="pane reveal" id="p2">
+    <div class="shots">
+      <div class="shot"><div class="phone"><div class="pin">
+        <div class="mini-g"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="#16204a" stroke-width="10"/><circle class="arc" cx="60" cy="60" r="52" fill="none" stroke="#19d3ff" stroke-width="10" stroke-linecap="round" style="stroke-dasharray:326.7;animation:sweep 4s infinite"/></svg>
+        <div class="gauge v" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;width:auto;height:auto">—</div></div>
+        <div style="margin-top:14px;font-size:11px;color:var(--mut);letter-spacing:2px">ПРИЛОЖИТЕ ПАЛЕЦ</div>
+        <div style="margin-top:auto;width:100%;padding:12px;border-radius:24px;background:linear-gradient(90deg,var(--blue),var(--cyan));color:#001028;text-align:center;font-weight:700;font-size:13px">СКАНИРОВАТЬ</div>
+      </div></div><h4>Замер</h4><p>Кольцо 0–100% и анимация пульса</p></div>
+
+      <div class="shot"><div class="phone"><div class="pin">
+        <b style="align-self:flex-start;font-size:14px">История</b>
+        <div class="bars"><i style="animation-delay:0s"></i><i style="animation-delay:.3s"></i><i style="animation-delay:.6s"></i><i style="animation-delay:.9s"></i><i style="animation-delay:1.2s"></i><i style="animation-delay:1.5s"></i><i style="animation-delay:1.8s"></i></div>
+        <p style="margin-top:12px;font-size:11px;color:var(--mut)">Палочки окрашиваются по зонам: норма, повышен, высокий, низкий</p>
+      </div></div><h4>История</h4><p>Анимированный график замеров</p></div>
+
+      <div class="shot"><div class="phone"><div class="pin">
+        <b style="align-self:flex-start;font-size:14px">Календарь</b>
+        <div class="cal" id="cal1"></div>
+        <p style="margin-top:12px;font-size:11px;color:var(--mut)">Дни с повышенной глюкозой подсвечиваются</p>
+      </div></div><h4>Календарь</h4><p>Когда сахар был повышен</p></div>
+
+      <div class="shot"><div class="phone"><div class="pin">
+        <img src="logo_icon.png" width="58" style="border-radius:50%;margin-top:6px">
+        <b style="margin-top:8px">Ваше имя</b><small style="color:var(--mut);font-size:11px">возраст · диагноз</small>
+        <div class="msg bot" style="margin-top:14px;font-size:12px;align-self:flex-start">Привет! Я подскажу, что делать при высоком или низком сахаре.</div>
+      </div></div><h4>Профиль и ИИ</h4><p>Имя, возраст, диагноз и приветствие</p></div>
+    </div>
+  </div>
+
+  <!-- 3 AI -->
+  <div class="pane reveal" id="p3">
+    <div class="chatbox">
+      <div class="chat" id="chat"><div class="msg bot">Привет! Я ИИ-помощник ScanAI. Отвечаю только про глюкозу и здоровье. Выберите вопрос:</div></div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <p class="note" style="max-width:560px;margin:18px auto 0">Помощник даёт общие советы и не назначает лекарства и дозы. При плохом самочувствии — врач, 103 / 112.</p>
+  </div>
+
+  <!-- 4 TECH -->
+  <div class="pane reveal" id="p4">
+    <div class="pipe">
+      <div class="node"><svg viewBox="0 0 48 48"><rect x="12" y="6" width="24" height="36" rx="6" fill="none" stroke="#19d3ff" stroke-width="3"/><circle cx="24" cy="15" r="3" fill="#19d3ff"/></svg><h4>Камера</h4><p>Видео пальца со вспышкой</p></div>
+      <div class="node"><svg viewBox="0 0 48 48"><path d="M4 26h8l4-14 6 28 5-20 3 6h14" fill="none" stroke="#19d3ff" stroke-width="3"/></svg><h4>PPG-сигнал</h4><p>Изменение яркости = пульс крови</p></div>
+      <div class="node"><svg viewBox="0 0 48 48"><path d="M4 30c8-20 12 12 20-6s14 8 20-6" fill="none" stroke="#1e90ff" stroke-width="3"/></svg><h4>Фильтр</h4><p>Полоса 0,7–8 Гц, поиск ударов</p></div>
+      <div class="node"><svg viewBox="0 0 48 48"><rect x="6" y="26" width="8" height="16" fill="#19d3ff"/><rect x="20" y="14" width="8" height="28" fill="#1e90ff"/><rect x="34" y="6" width="8" height="36" fill="#19d3ff"/></svg><h4>17 признаков</h4><p>Форма волны, вариабельность</p></div>
+      <div class="node"><svg viewBox="0 0 48 48"><path d="M24 6c8 10 12 16 12 23a12 12 0 0 1-24 0c0-7 4-13 12-23z" fill="#1e90ff55" stroke="#19d3ff" stroke-width="3"/></svg><h4>Модель</h4><p>Оценка в ммоль/л</p></div>
+    </div>
+    <div class="flow"></div>
+    <p class="note" style="margin-top:26px">Статус: исследовательский прототип. Точность оценки по камере не подтверждена клинически и зависит от условий съёмки. Мы публикуем только проверяемые результаты.</p>
   </div>
 </section>
 
 <section id="download">
-  <h2>Скачать приложения</h2>
-  <div class="dl">
-    <div class="card"><h3>ScanAI</h3><p>Скан глюкозы камерой. Android.</p><br><a class="btn" href="ScanAI.apk" download>ScanAI.apk</a></div>
-    <div class="card"><h3>CR DRIVE · телефон</h3><p>Мониторинг здоровья водителя: показатели, карта, события.</p><br><a class="btn ghost" href="CR-DRIVE-phone.apk" download>CR-DRIVE-phone.apk</a></div>
-    <div class="card"><h3>CR DRIVE · часы</h3><p>Galaxy Watch 4 (Wear OS): пульс, ЭКГ, SpO₂.</p><br><a class="btn ghost" href="CR-DRIVE-watch.apk" download>CR-DRIVE-watch.apk</a></div>
+  <div class="dl reveal">
+    <div>
+      <h2>Скачать <span>ScanAI</span></h2>
+      <p class="sub" style="margin-bottom:18px">Android. Откройте файл на телефоне и разрешите установку из этого источника.</p>
+      <a class="btn" href="ScanAI.apk" download>Скачать ScanAI.apk</a>
+    </div>
+    <div style="text-align:center"><img src="logo_icon.png" alt="" style="width:170px;border-radius:40px;box-shadow:0 0 60px #1e90ff88" class="float"></div>
   </div>
-  <p class="note">Установка: откройте файл на Android-телефоне и разрешите установку из этого источника. Исходный код: <a href="https://github.com/nuralyga07-netizen/scanai-crdrive">GitHub</a>.</p>
 </section>
+</main>
 
-<footer>ScanAI · CR DRIVE — исследовательские прототипы. Оценка глюкозы по камере не валидирована клинически; при плохом самочувствии обращайтесь к врачу (103 / 112).</footer>
-</div>
+<footer class="wrap">ScanAI — исследовательский проект. Оценка глюкозы по камере не валидирована клинически и не заменяет глюкометр и консультацию врача. Исходный код: <a href="https://github.com/nuralyga07-netizen/scanai-crdrive">GitHub</a>.</footer>
 
 <script>
-const $=s=>document.querySelector(s);
-const zone=v=>v<3.9?['Низкий','#7aa2ff']:v<=7.8?['Норма','#2ee59d']:v<=11?['Повышен','#ffb020']:['Высокий','#ff4d5e'];
-let hist=[]; // no sample data: real readings exist only inside the Android app
-// tabs
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x===b));
-  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));
-  render();
-});
-// scan
-let busy=false;
-$('#go').onclick=()=>{
-  $('#zone').innerHTML='Реальный замер — только в приложении.<br><a href="ScanAI.apk" download>Скачать ScanAI.apk</a>';
-  $('#zone').style.color='#19d3ff';
-};
-function render(){
-  const W=260,H=120,n=hist.length,max=12;
-  let pts=hist.map((h,i)=>[10+i*(W-20)/Math.max(n-1,1),H-10-(h.v/max)*(H-20)]);
-  $('#chart').innerHTML='<polyline fill="none" stroke="#1e90ff" stroke-width="2.5" points="'+pts.map(p=>p.join(',')).join(' ')+'"/>'+
-    pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${zone(hist[i].v)[1]}"/>`).join('');
-  $('#list').innerHTML=hist.slice().reverse().slice(0,6).map(h=>`<div class="pill"><span>Скан</span><b style="color:${zone(h.v)[1]}">${h.v} ммоль/л</b></div>`).join('');
-  if(!n)$('#list').innerHTML='<div class="pill"><span>Замеров пока нет. Они появятся в приложении после сканирования.</span></div>';
-  $('#cal').innerHTML=Array.from({length:28},(_,i)=>`<div>${i+1}</div>`).join('');
-}
-// bot
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+/* intro ~5.4 s */
+const intro=$('#intro');let gone=false;
+function closeIntro(){if(gone)return;gone=true;intro.classList.add('out');setTimeout(()=>{intro.remove();document.body.style.overflow=''},1000);startReveal()}
+document.body.style.overflow='hidden';
+intro.onclick=closeIntro;setTimeout(closeIntro,5400);
+/* reveal on scroll */
+function startReveal(){const io=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in')}}),{threshold:.12});$$('.reveal').forEach(el=>io.observe(el))}
+/* particles bg */
+const bg=$('#bg'),bx=bg.getContext('2d');let P=[];
+function rs(){bg.width=innerWidth;bg.height=innerHeight;P=Array.from({length:Math.min(80,innerWidth/14)},()=>({x:Math.random()*bg.width,y:Math.random()*bg.height,r:Math.random()*2+.4,vx:(Math.random()-.5)*.3,vy:-Math.random()*.4-.1}))}
+rs();addEventListener('resize',rs);
+(function loop(){bx.clearRect(0,0,bg.width,bg.height);
+ for(const p of P){p.x+=p.vx;p.y+=p.vy;if(p.y<-5){p.y=bg.height+5;p.x=Math.random()*bg.width}
+  bx.beginPath();bx.arc(p.x,p.y,p.r,0,7);bx.fillStyle='rgba(25,211,255,.5)';bx.fill()}
+ for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){const a=P[i],b=P[j],d=Math.hypot(a.x-b.x,a.y-b.y);if(d<110){bx.strokeStyle='rgba(30,144,255,'+(.18*(1-d/110))+')';bx.beginPath();bx.moveTo(a.x,a.y);bx.lineTo(b.x,b.y);bx.stroke()}}
+ requestAnimationFrame(loop)})();
+/* illustrative pulse waveform (decorative, not a measurement) */
+function ppg(t){const ph=t%1;return Math.exp(-Math.pow((ph-.18)/.07,2))*1+Math.exp(-Math.pow((ph-.45)/.1,2))*.45}
+const hw=$('#heroWave'),hx=hw.getContext('2d');let T=0;
+(function w(){const W=hw.width,H=hw.height;hx.clearRect(0,0,W,H);hx.lineWidth=3;hx.lineJoin='round';
+ const g=hx.createLinearGradient(0,0,W,0);g.addColorStop(0,'#1e90ff00');g.addColorStop(.4,'#1e90ff');g.addColorStop(1,'#19d3ff');hx.strokeStyle=g;hx.shadowColor='#19d3ff';hx.shadowBlur=10;hx.beginPath();
+ for(let x=0;x<W;x++){const y=H-12-ppg((x/W)*3.2-T)*(H-34);x?hx.lineTo(x,y):hx.moveTo(x,y)}hx.stroke();T+=.012;requestAnimationFrame(w)})();
+/* tabs */
+$$('#tabs button').forEach(b=>b.onclick=()=>{$$('#tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('.pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));$$('.pane.on.reveal').forEach(p=>p.classList.add('in'))});
+/* steps cycle in sync with finger animation (4 s) */
+let si=0;setInterval(()=>{si=(si+1)%4;$$('.step').forEach((s,i)=>s.classList.toggle('on',i===si))},1800);
+/* calendar illustration: highlighted days are decorative */
+$('#cal1').innerHTML=Array.from({length:28},(_,i)=>`<i class="${[2,4,9,10,16,22].includes(i)?'h':''}"></i>`).join('');
+/* chat */
 const QA={
  'Сахар высокий — что делать?':'При сахаре выше 10 ммоль/л: выпейте воды, сделайте лёгкую прогулку, избегайте сладкого. Дозы лекарств я не назначаю — следуйте схеме врача. При тошноте, сильной жажде или сахаре выше 16 свяжитесь с врачом.',
- 'Сахар низкий — что делать?':'Ниже 3,9 ммоль/л: примите 15 г быстрых углеводов (сок, глюкоза), перемерьте через 15 минут. При спутанности сознания — 103/112.',
+ 'Сахар низкий — что делать?':'Ниже 3,9 ммоль/л: примите 15 г быстрых углеводов (сок, глюкоза), перемерьте через 15 минут. При спутанности сознания — 103 / 112.',
  'Что можно есть?':'Овощи, белок, цельнозерновые. Ограничьте сладкие напитки и выпечку. Подробный план составит эндокринолог.',
- 'Какая норма?':'Натощак ориентир 3,9–5,5, через 2 часа после еды до 7,8 ммоль/л. Индивидуальные цели задаёт врач.'
+ 'Какая норма?':'Ориентир: натощак 3,9–5,5, через 2 часа после еды до 7,8 ммоль/л. Индивидуальные цели задаёт врач.',
+ 'Можно ли заниматься спортом?':'Умеренная активность помогает снижать сахар. Перед нагрузкой проверьте уровень; при сахаре выше 14 или ниже 5,6 лучше проконсультироваться с врачом.'
 };
+const chat=$('#chat');
 Object.keys(QA).forEach(q=>{const b=document.createElement('button');b.textContent=q;b.onclick=()=>{
-  const c=$('#chat');c.insertAdjacentHTML('beforeend',`<div class="msg me">${q}</div>`);
-  setTimeout(()=>{c.insertAdjacentHTML('beforeend',`<div class="msg bot">${QA[q]}</div>`);$('#s-ai').scrollTop=1e5},600)};
-  $('#chips').appendChild(b)});
-render();
+  chat.insertAdjacentHTML('beforeend',`<div class="msg me">${q}</div><div class="msg bot dots" id="ty"><span></span><span></span><span></span></div>`);chat.scrollTop=1e5;
+  setTimeout(()=>{$('#ty').remove();chat.insertAdjacentHTML('beforeend',`<div class="msg bot">${QA[q]}</div>`);chat.scrollTop=1e5},900)};$('#chips').appendChild(b)});
 </script>
 </body>
 </html>
