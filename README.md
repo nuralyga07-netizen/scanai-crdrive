@@ -1,5 +1,5 @@
 # ScanAI
-n**Сайт / Live demo: https://scanai.nuralyga.workers.dev**
+n**Сайт / Live demo: https://scanai-8ga.pages.dev**
 
 Research prototypes (investor / jury demo). **Not medical devices.**
 
